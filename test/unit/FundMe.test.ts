@@ -1,13 +1,18 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deployments, ethers, getNamedAccounts, network } from "hardhat";
-import { FundMe } from "../../typechain-types";
+import { FundMe, MockV3Aggregator } from "../../typechain-types";
 import { developmentChains } from "../../helper-hardhat-config";
-import { assert, expect } from "chai";
+import chai from "chai";
+import { solidity } from "ethereum-waffle";
+
+chai.use(solidity);
+
+const { assert, expect } = chai;
 
 describe("FundMe", async function () {
   let fundMe: FundMe;
   let deployer: SignerWithAddress;
-  let mockV3Aggregator: any;
+  let mockV3Aggregator: MockV3Aggregator;
 
   beforeEach(async function () {
     // deploy fund me contract with hardhat deploy
@@ -27,6 +32,12 @@ describe("FundMe", async function () {
     it("sets the aggregator addresses correctly", async () => {
       const response = await fundMe.priceFeed();
       assert.equal(response, mockV3Aggregator.address);
+    });
+  });
+
+  describe("fund", async function () {
+    it("Fails if you don't send enough ETH", async function () {
+      await expect(fundMe.fund()).to.be.reverted;
     });
   });
 });
