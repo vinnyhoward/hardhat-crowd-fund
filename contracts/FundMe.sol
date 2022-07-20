@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 // Imports
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./PriceConverter.sol";
+import "hardhat/console.sol";
 
 // Error Codes
 error FundMe__NotOwner();
@@ -68,7 +69,9 @@ contract FundMe {
         );
 
         addressToAmountFunded[msg.sender] += msg.value;
+        console.log("sender being added to funder", msg.sender);
         funders.push(msg.sender);
+        console.log("after funders array is updated with sender:", funders[0]);
     }
 
     function withdraw() public payable onlyOwner {
@@ -81,7 +84,7 @@ contract FundMe {
             addressToAmountFunded[funder] = 0;
         }
         funders = new address[](0);
-
+        // You can use console.log and it can be seen in the terminal
         (bool callSuccess, ) = payable(msg.sender).call{
             value: address(this).balance
         }("");
