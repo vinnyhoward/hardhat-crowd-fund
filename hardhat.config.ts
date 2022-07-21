@@ -14,7 +14,7 @@ import { HardhatUserConfig } from "hardhat/config";
  * @type import('hardhat/config').HardhatUserConfig
  */
 
-const COIN_MARKET_CAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "";
+// const COIN_MARKET_CAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "";
 const KOVAN_RPC_URL =
   process.env.KOVAN_RPC_URL ||
   "https://eth-mainnet.alchemyapi.io/v2/your-api-key";
@@ -54,7 +54,7 @@ const config: HardhatUserConfig = {
     currency: "USD",
     outputFile: "gas-report.txt",
     noColors: true,
-    coinmarketcap: COIN_MARKET_CAP_API_KEY,
+    // coinmarketcap: COIN_MARKET_CAP_API_KEY,
   },
   namedAccounts: {
     deployer: {

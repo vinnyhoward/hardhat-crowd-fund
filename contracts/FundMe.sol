@@ -36,11 +36,11 @@ contract FundMe {
     using PriceConverter for uint256;
 
     // state veriables
-    mapping(address => uint256) public addressToAmountFunded;
-    address[] public funders;
-    address public immutable i_owner;
+    mapping(address => uint256) private s_addressToAmountFunded;
+    address[] private s_funders;
+    address private immutable i_owner;
     uint256 public constant MINIMUM_USD = 50 * 10**18;
-    AggregatorV3Interface public priceFeed;
+    AggregatorV3Interface private s_priceFeed;
 
     modifier onlyOwner() {
         if (msg.sender != i_owner) revert FundMe__NotOwner();
@@ -49,7 +49,7 @@ contract FundMe {
 
     constructor(address priceFeedAddress) {
         i_owner = msg.sender;
-        priceFeed = AggregatorV3Interface(priceFeedAddress);
+        s_priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 
     receive() external payable {
@@ -64,26 +64,29 @@ contract FundMe {
     /// @dev Explain to a developer any extra details
     function fund() public payable {
         require(
-            msg.value.getConversionRate(priceFeed) >= MINIMUM_USD,
+            msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD,
             "You need to spend more ETH!"
         );
 
-        addressToAmountFunded[msg.sender] += msg.value;
+        s_addressToAmountFunded[msg.sender] += msg.value;
         console.log("sender being added to funder", msg.sender);
-        funders.push(msg.sender);
-        console.log("after funders array is updated with sender:", funders[0]);
+        s_funders.push(msg.sender);
+        console.log(
+            "after s_funders array is updated with sender:",
+            s_funders[0]
+        );
     }
 
     function withdraw() public payable onlyOwner {
         for (
             uint256 funderIndex = 0;
-            funderIndex < funders.length;
+            funderIndex < s_funders.length;
             funderIndex++
         ) {
-            address funder = funders[funderIndex];
-            addressToAmountFunded[funder] = 0;
+            address funder = s_funders[funderIndex];
+            s_addressToAmountFunded[funder] = 0;
         }
-        funders = new address[](0);
+        s_funders = new address[](0);
         // You can use console.log and it can be seen in the terminal
         (bool callSuccess, ) = payable(msg.sender).call{
             value: address(this).balance
@@ -91,15 +94,54 @@ contract FundMe {
         require(callSuccess, "Call failed");
     }
 
-    // Explainer from: https://solidity-by-example.org/fallback/
-    // Ether is sent to contract
-    //      is msg.data empty?
-    //          /   \
-    //         yes  no
-    //         /     \
-    //    receive()?  fallback()
-    //     /   \
-    //   yes   no
-    //  /        \
-    //receive()  fallback()
+    function cheaperWithdraw() public payable onlyOwner {
+        address[] memory funders = s_funders;
+        // mappings can't be in memory :(
+        for (
+            uint256 funderIndex = 0;
+            funderIndex < funders.length;
+            funderIndex++
+        ) {
+            address funder = funders[funderIndex];
+            s_addressToAmountFunded[funder] = 0;
+        }
+        s_funders = new address[](0);
+        // You can use console.log and it can be seen in the terminal
+        (bool callSuccess, ) = payable(msg.sender).call{
+            value: address(this).balance
+        }("");
+        require(callSuccess, "Call failed");
+    }
+
+    function getOwner() public view returns (address) {
+        return i_owner;
+    }
+
+    function getFunder(uint256 index) public view returns (address) {
+        return s_funders[index];
+    }
+
+    function getAddressToAmountFunded(address funder)
+        public
+        view
+        returns (uint256)
+    {
+        return s_addressToAmountFunded[funder];
+    }
+
+    function getPriceFeed() public view returns (AggregatorV3Interface) {
+        return s_priceFeed;
+    }
 }
+
+// Explainer from: https://solidity-by-example.org/fallback/
+// Ether is sent to contract
+//      is msg.data empty?
+//          /   \
+//         yes  no
+//         /     \
+//    receive()?  fallback()
+//     /   \
+//   yes   no
+//  /        \
+//receive()  fallback()
